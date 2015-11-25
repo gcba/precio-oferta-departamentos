@@ -1,0 +1,8 @@
+shapefile
+pyproj
+pandas>=0.17.0
+shapely
+matplotlib
+rtree
+dataset
+psycopg2
