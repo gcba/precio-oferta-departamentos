@@ -43,7 +43,8 @@ LEGEND_NAME = {
 }
 
 LEGEND_IDX = {
-    "divisions": 0
+    "points": 0,
+    "divisions": 1
 }
 
 SUBLAYER_IDX = {

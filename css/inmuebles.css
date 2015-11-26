@@ -36,7 +36,7 @@ body,
 
 #main-panel {
     max-height: calc(97% - 50px);
-    width: 300px;
+    width: 350px;
     /*max-width: 30%*/
 }
 
@@ -186,7 +186,11 @@ div.cartodb-legend ul li {
 #descripcion {
     margin-top: 5px;
 }
+#descripcion {
+    /*text-align: justify;*/
+    hyphens: auto;
+}
 
 .footnote {
-    font-size: 10;
+    font-size: 85%;
 }

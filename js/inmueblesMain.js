@@ -51,6 +51,7 @@ function main() {
             do_map_query(layers[1].getSubLayer(0), "")
             do_map_query(layers[1].getSubLayer(1), "")
 
+            create_show_points_btn(layers[1])
             retrieve_divs_ids()
                 // retrieve_stations_and_lines()
             relocate_cartodb_overlays()
@@ -76,6 +77,14 @@ function main() {
 window.onload = main;
 
 // random stuff
+
+function create_show_points_btn (layer) {
+    var sublayer = layer.getSubLayer(SUBLAYER_IDX["points"])
+    $("#show-points").click(function () {
+        sublayer.toggle()
+    })
+}
+
 function relocate_cartodb_overlays() {
     $(".cartodb-layer-selector-box").prependTo($(".cartodb-header .content"))
     $(".cartodb-searchbox").prependTo($(".cartodb-header .content"))
@@ -126,6 +135,7 @@ function add_years_li(idItems, idButton, text, name, layer) {
         recalculate_divisions_indicator(layer, "usdm2_" + current_year,
             function() {
                 do_divisions_map_query(layer)
+                do_points_map_query(layer)
             })
     })
     $("#" + idItems).append($('<li>').append(a))
@@ -143,38 +153,6 @@ function create_trans_list(layer) {
     $.each(PANEL_TRANSPORTE, function(key, val) {
         add_trans_li("capas-transporte", val, key)
     })
-}
-
-function add_trans_li(idList, text, name) {
-    var li = $('<li>').attr("class", "list-group-item")
-    li.append($("<input type='checkbox'>").attr("name", name))
-    li.append("  " + text)
-    $("#" + idList).append(li)
-}
-
-function do_transport_layers_query(names, layer) {
-    // console.log("haciendo la query de transporte")
-    var lineas = layer.getSubLayer(2)
-    var estaciones = layer.getSubLayer(3)
-    var queryLineas = ""
-    var queryEstaciones = ""
-
-    // create queries
-    names.forEach(function(name) {
-        var nameType = name.split("_")[0]
-
-        if (nameType == "est") {
-            queryEstaciones = update_trans_query(name, queryEstaciones, "estaciones")
-        } else if (nameType == "lin") {
-            queryLineas = update_trans_query(name, queryLineas, "lineas")
-        } else {
-            console.log(nameType + " from " + name + " not recognized.")
-        }
-    })
-
-    // do queries
-    do_map_query(lineas, queryLineas)
-    do_map_query(estaciones, queryEstaciones)
 }
 
 // panel principal
@@ -214,8 +192,9 @@ function add_divisions_li(idItems, idButton, text, name, layer) {
             $("#close-legends").show("fast")
             recalculate_divisions_indicator(layer, "usdm2_" + current_year,
                 function() {
-                do_divisions_map_query(layer)
-            })
+                    do_divisions_map_query(layer)
+                    do_points_map_query(layer)
+                })
 
         } else {
             $(get_legend("divisions")).css("display", "none")
@@ -445,7 +424,7 @@ function create_divs_filter(layer, filterDivs, nameDivs, filterMsg) {
         setTimeout(function() {
             if (_.isEqual(g_divisions["tags"], tags)) {
                 do_divisions_map_query(layer)
-                do_buffers_map_query(layer)
+                do_points_map_query(layer)
                 set_universe_totals(layer)
                 calculate_indicators(layer)
                 show_or_hide_cols()
@@ -461,6 +440,14 @@ function do_divisions_map_query(layer) {
     var query = gen_divisions_map_query(g_divisions["areaLevel"],
         g_divisions["tags"])
     g_pending_actions["divs_map"] = query
+    do_map_query(sublayer, query)
+}
+
+function do_points_map_query(layer) {
+    var sublayer = layer.getSubLayer(SUBLAYER_IDX["points"])
+    var query = gen_points_map_query(g_divisions["areaLevel"],
+        g_divisions["tags"], current_year, g_pending_actions["divs_map"])
+    g_pending_actions["points_map"] = query
     do_map_query(sublayer, query)
 }
 
@@ -545,7 +532,6 @@ function create_selected_buffers_field(layer) {
                 $("#tag-list-buffers").css("display", "block")
                 $("#tag-list-stations-and-lines").css("display", "block")
 
-                do_buffers_map_query(layer)
                 update_capas_transporte(newTag, true)
                 g_buffers["displayLgd"] = true
                 $("#open-legends").hide("fast")
@@ -583,7 +569,6 @@ function create_selected_buffers_field(layer) {
                 get_filter_buffers(layer)
 
                 update_capas_transporte(oldTag, false)
-                do_buffers_map_query(layer)
             };
 
         }, TIMEOUTS["remove_buffer_tag"])
@@ -646,75 +631,6 @@ function get_filter_buffers(layer, modeToAddLines) {
     g_buffers["filter_tags"] = new_filter_tags
 
     create_buffers_filter(layer, filterBuffers, BUFFERS_FILTER_MSG)
-}
-
-function create_buffers_filter(layer, filterBuffers, filterMsg) {
-
-    // If using Bootstrap 2, be sure to include:
-    // Tags.bootstrapVersion = "2";
-    var filter = $('<div>').attr("class", "tag-list")
-    $('#tag-list-stations-and-lines').empty()
-    update_queries_with_buffers_filter()
-
-    $('#tag-list-stations-and-lines').append(filter)
-    g_buffers["filter_tags"] = filter.tags({
-        tagData: g_buffers["filter_tags"],
-        suggestions: filterBuffers,
-        excludeList: [],
-        tagSize: "sm",
-        caseInsensitive: true,
-        restrictTo: filterBuffers,
-        promptText: filterMsg,
-        afterAddingTag: update_queries_with_buffers_filter,
-        afterDeletingTag: update_queries_with_buffers_filter
-    }).getTags();
-
-    function update_queries_with_buffers_filter(changingTag) {
-        if (changingTag) {
-            var tags = this.getTags().slice()
-            g_buffers["filter_tags"] = tags.slice()
-
-            setTimeout(function() {
-                if (_.isEqual(g_buffers["filter_tags"], tags)) {
-                    do_buffers_map_query(layer)
-                    calculate_indicators(layer)
-                    show_or_hide_cols()
-                } else {
-                    console.log("Filter buffers query avoided.")
-                };
-            }, TIMEOUTS["filter_buffers"])
-
-        } else {
-            do_buffers_map_query(layer)
-            calculate_indicators(layer)
-            show_or_hide_cols()
-        };
-    }
-};
-
-function do_buffers_map_query(layer) {
-    var tags = g_buffers["tags"].getTags()
-
-    if (g_buffers["filter_tags"].length > 0) {
-        var filter_tags = g_buffers["filter_tags"]
-    } else {
-        var filter_tags = []
-    };
-
-    var divsMapQuery = g_pending_actions["divs_map"]
-    var query = gen_buffers_map_query(divsMapQuery, tags, filter_tags)
-
-    if (query != "") {
-        g_buffers["displayLgd"] = true
-    } else {
-        g_buffers["displayLgd"] = false
-    };
-
-    g_pending_actions["buffers_map"] = query
-    do_map_query(layer.getSubLayer(SUBLAYER_IDX["buffers"]), query)
-    $("#panel-indicators").attr("legend-type", "buffers")
-    recalculate_buffers_indicator(layer, g_buffers["indicator"])
-    set_universe_totals(layer)
 }
 
 // crear panel de indicators para cambiar las leyendas
@@ -911,124 +827,6 @@ function replace_loading_with_universe() {
     $("#universe-data p").css("display", "block")
     $("#universe-spinner").css("display", "none")
         // rebuild_table()
-}
-
-function show_or_hide_cols() {
-    var table = $("#indicators-seleccionados").DataTable()
-    if (g_divisions["displayLgd"] && g_buffers["displayLgd"]) {
-        table.column(1).visible(true)
-        table.column(2).visible(true)
-    } else if (g_divisions["displayLgd"] || g_buffers["displayLgd"]) {
-        table.column(1).visible(false)
-        table.column(2).visible(false)
-    }
-}
-
-function add_new_row(layer, table, idRow, row) {
-    var indic = idRow.split("-")[1]
-    var rowNode = table.row.add(row).draw(true).node()
-
-
-    // row atributtes
-    $(rowNode).attr("id", idRow).css("overflow", "visible")
-    $(rowNode).attr("visualize-indic", "none")
-    var td = $($(rowNode).find("td")[0])
-    td.attr("class", "dropdown")
-
-    // assign color if active in the map
-    if (g_divisions["indicator"] == indic) {
-        set_row_color(rowNode, "divisions")
-    } else if (g_buffers["indicator"] == indic) {
-        set_row_color(rowNode, "buffers")
-    };
-
-    $($(rowNode).find("td")[0]).css("font-weight", "bold")
-    $($($(rowNode).find("td")[0]).find("a")[0]).css("color", "black")
-
-    // build clickable interface
-    var dropdown = $('<a data-hover="tooltip" data-placement="left" title="' + INDICS[indic]["long"] + '" data-toggle="dropdown" class="dropdown-toggle table-row">{}<b class="caret"></b></a>'.format(row[0]))
-    $("[data-hover='tooltip']").tooltip()
-    var options = $('<ul class="dropdown-menu"></ul>')
-
-    var divs = $('<li><a href="#">Divisiones</a></li>')
-    divs.click(function() {
-        set_table_indic_color(indic, "divisions")
-        recalculate_divisions_indicator(layer, indic)
-    })
-    var buffers = $('<li><a href="#">Buffers</a></li>')
-    buffers.click(function() {
-        set_table_indic_color(indic, "buffers")
-        recalculate_buffers_indicator(layer, indic)
-    })
-
-    // if (g_divisions["displayLgd"]) {
-    options.append(divs)
-        // };
-        // if (g_buffers["displayLgd"]) {
-    options.append(buffers)
-        // };
-    td.text("").append(dropdown)
-    td.append(options)
-}
-
-function query_indic_mixed(layer, indics, table) {
-    query_buffers_indic_in(layer, indics, table,
-        function(layer, table, indics, bufferInResult) {
-
-            query_buffers_indic_out(layer, indics, table,
-                function(layer, table, indics, bufferOutResult) {
-
-                    query_divisions_indic_all(layer, indics,
-                        table,
-                        function(layer, table, indics, divisionsAllResult) {
-
-                            if (!$.isEmptyObject(bufferInResult) & !$.isEmptyObject(bufferOutResult) & !$.isEmptyObject(divisionsAllResult)) {
-
-                                table.rows().remove().draw()
-                                $.each(indics, function(index, indic) {
-                                    var row = [INDICS[indic]["short"],
-                                        format_val(indic, bufferInResult[indic]),
-                                        format_val(indic, bufferOutResult[indic]),
-                                        format_val(indic, divisionsAllResult[indic])
-                                    ]
-                                    add_new_row(layer, table, "table-" + indic, row)
-                                })
-                                replace_loading_with_table()
-                                table.draw()
-                                set_table_indic_color(g_divisions["indicator"],
-                                    "divisions")
-                                set_table_indic_color(g_buffers["indicator"],
-                                    "buffers")
-                            };
-                        })
-                })
-        })
-}
-
-function draw_indics_in_table(layer, table, indics, result) {
-    var both = g_divisions["displayLgd"] && g_buffers["displayLgd"]
-    var one_of_them = g_divisions["displayLgd"] || g_buffers["displayLgd"]
-
-    if (!both && one_of_them && result) {
-        $.each(indics, function(index, indic) {
-            var row = [INDICS[indic]["short"], "", "", format_val(indic,
-                result[indic])]
-            add_new_row(layer, table, "table-" + indic, row)
-        })
-        replace_loading_with_table()
-        rebuild_table()
-    }
-}
-
-function rebuild_table() {
-    var height = calc_data_table_height(0.95)
-    g_tbl_options["sScrollY"] = height
-    var table = $("#indicators-seleccionados").DataTable(g_tbl_options)
-    show_or_hide_cols()
-    table.draw()
-
-    set_table_indic_color(g_divisions["indicator"], "divisions")
-    set_table_indic_color(g_buffers["indicator"], "buffers")
 }
 
 function format_val(indic, value) {
@@ -1255,7 +1053,7 @@ function recalculate_indicator(layer, indic, query, legendType, callback) {
     g_pending_actions[legendType + "_legend"] = query
     do_db_query(query, function(data) {
         var all = data.rows
-        // debugger
+            // debugger
 
         // remove nulls
         // console.log(all)

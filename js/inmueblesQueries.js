@@ -1,35 +1,3 @@
-POLYS_UNION_SELECT = "1 AS cartodb_id, ST_MakeValid(ST_Union(ST_Intersection(buffers_estaciones.the_geom, ST_MakeValid(ST_Buffer(divs.the_geom, 0.00000001))))) AS the_geom"
-
-// por algún motivo esta opción no funciona
-// POLYS_UNION_SELECT = "1 AS cartodb_id, ST_MakeValid(ST_Union(safe_intersection(buffers_estaciones.the_geom, divs.the_geom))) AS the_geom"
-
-POLYS_DIFF_UNION_SELECT = "1 AS cartodb_id, ST_MakeValid(ST_Buffer(ST_Union(ST_Difference(ST_MakeValid(divisiones.the_geom), buffers_union.the_geom)), 0.00000001)) AS the_geom FROM divisiones, buffers_union"
-
-SELECT_BUFFERS = "ST_MakeValid(ST_Intersection(buffers_estaciones.the_geom_webmercator, ST_MakeValid(divs.the_geom_webmercator))) AS the_geom_webmercator, buffers_estaciones.cartodb_id"
-
-// no logré que esto funcione, queda sólo para tratar de hacerlo en el futuro
-// http://gis.stackexchange.com/questions/50399/how-best-to-fix-a-non-noded-intersection-problem-in-postgis
-SAFE_INTERSECTION = " \
-CREATE OR REPLACE FUNCTION safe_isect(geom_a geometry, geom_b geometry) \
-RETURNS geometry AS \
-$$ \
-BEGIN \
-    RETURN ST_Intersection(geom_a, geom_b); \
-    EXCEPTION \
-        WHEN OTHERS THEN \
-            BEGIN \
-                RETURN ST_Intersection(ST_Buffer(geom_a, 0.00000001), ST_Buffer( geom_b, 0.00000001)); \
-                EXCEPTION \
-                    WHEN OTHERS THEN \
-                        RETURN ST_GeomFromText('POLYGON EMPTY'); \
-    END; \
-END \
-$$ \
-LANGUAGE 'plpgsql' STABLE STRICT; "
-
-UNIVERSE_CALC_AREA_LEVEL = "FRAC"
-COVERAGE_CALC_AREA_LEVEL = "FRAC"
-
 g_queries_cache = {}
 
 // realizar queries a cartodb
@@ -104,6 +72,29 @@ WHERE divisiones.orig_sf = '{0}' \
             query += " OR " + div_filter(areaLevel, areaFilter)
         })
         query += ")"
+    }
+
+    return query
+}
+
+function gen_points_map_query(areaLevel, areasFilter, year, divsMapQuery) {
+    var query = ""
+
+    if (areaLevel == "None") {
+        return query
+    };
+
+    if (areasFilter.length >= 1) {
+        var divsGeoms = divsMapQuery.replace("divisiones.*", "divisiones.the_geom")
+
+        query += "WITH divs AS ({0}), \
+        divs_union AS (SELECT ST_Union(divs.the_geom) AS the_geom FROM divs) \
+        SELECT deptos_con_divs.* FROM deptos_con_divs, divs_union \
+        WHERE deptos_con_divs.orig_sf = '{1}' AND \
+            ST_Within(deptos_con_divs.the_geom, divs_union.the_geom) \
+        ".format(divsGeoms, year)
+    } else {
+        query += "SELECT deptos_con_divs.* FROM deptos_con_divs WHERE deptos_con_divs.orig_sf = '{0}'".format(year)
     }
 
     return query
