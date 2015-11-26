@@ -65,10 +65,6 @@ body,
     float: left;
 }
 
-#tag-list-divisiones {
-    margin-top: 10px;
-}
-
 #panel-indicators,
 #panel-indicators-select {
     position: absolute;
@@ -185,6 +181,12 @@ div.cartodb-legend ul li {
     margin: 0 0 0 -100px;
 }
 
-#descargar-datos {
-    margin-top: 10px;
+#descargar-datos,
+#tag-list-divisiones,
+#descripcion {
+    margin-top: 5px;
+}
+
+.footnote {
+    font-size: 10;
 }
