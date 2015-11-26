@@ -65,8 +65,8 @@ body,
     float: left;
 }
 
-#tag-list-buffers {
-    display: none;
+#tag-list-divisiones {
+    margin-top: 10px;
 }
 
 #panel-indicators,
@@ -183,4 +183,8 @@ div.cartodb-legend ul li {
     bottom: 50px;
     left: 50%;
     margin: 0 0 0 -100px;
+}
+
+#descargar-datos {
+    margin-top: 10px;
 }
