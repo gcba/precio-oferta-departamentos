@@ -8,6 +8,11 @@ g_divisions = {
     "indicator": "usdm2_2014",
     "displayLgd": false,
 }
+
+g_points = {
+    "show": false
+}
+
 g_tbl_options = {}
 g_divs_ids = {}
 cartodb_vis = null
@@ -78,10 +83,16 @@ window.onload = main;
 
 // random stuff
 
-function create_show_points_btn (layer) {
+function create_show_points_btn(layer) {
     var sublayer = layer.getSubLayer(SUBLAYER_IDX["points"])
-    $("#show-points").click(function () {
-        sublayer.toggle()
+    $("#show-points").click(function() {
+        if (g_points["show"]) {
+            g_points["show"] = false
+            sublayer.hide()
+        } else {
+            g_points["show"] = true
+            sublayer.show()
+        };
     })
 }
 
@@ -132,11 +143,13 @@ function add_years_li(idItems, idButton, text, name, layer) {
         if (this.name != "None") {
             current_year = this.name
         }
-        recalculate_divisions_indicator(layer, "usdm2_" + current_year,
-            function() {
-                do_divisions_map_query(layer)
-                do_points_map_query(layer)
-            })
+        if (g_divisions["displayLgd"]) {
+            recalculate_divisions_indicator(layer, "usdm2_" + current_year,
+                function() {
+                    do_divisions_map_query(layer)
+                })
+        };
+        do_points_map_query(layer)
     })
     $("#" + idItems).append($('<li>').append(a))
 }
@@ -200,6 +213,7 @@ function add_divisions_li(idItems, idButton, text, name, layer) {
             $(get_legend("divisions")).css("display", "none")
             g_divisions["displayLgd"] = false
             set_legend_container_hidden()
+            layer.getSubLayer(SUBLAYER_IDX["divisions"]).hide()
         }
 
 
@@ -444,11 +458,15 @@ function do_divisions_map_query(layer) {
 }
 
 function do_points_map_query(layer) {
-    var sublayer = layer.getSubLayer(SUBLAYER_IDX["points"])
-    var query = gen_points_map_query(g_divisions["areaLevel"],
-        g_divisions["tags"], current_year, g_pending_actions["divs_map"])
-    g_pending_actions["points_map"] = query
-    do_map_query(sublayer, query)
+        var sublayer = layer.getSubLayer(SUBLAYER_IDX["points"])
+        var query = gen_points_map_query(g_divisions["tags"], current_year, g_pending_actions["divs_map"])
+        g_pending_actions["points_map"] = query
+        do_map_query(sublayer, query)
+    if (g_points["show"]) {
+        sublayer.show()
+    } else {
+        sublayer.hide()
+    };
 }
 
 // selector de buffers

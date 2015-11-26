@@ -77,12 +77,8 @@ WHERE divisiones.orig_sf = '{0}' \
     return query
 }
 
-function gen_points_map_query(areaLevel, areasFilter, year, divsMapQuery) {
+function gen_points_map_query(areasFilter, year, divsMapQuery) {
     var query = ""
-
-    if (areaLevel == "None") {
-        return query
-    };
 
     if (areasFilter.length >= 1) {
         var divsGeoms = divsMapQuery.replace("divisiones.*", "divisiones.the_geom")

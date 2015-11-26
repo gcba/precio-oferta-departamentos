@@ -187,8 +187,7 @@ div.cartodb-legend ul li {
     margin-top: 5px;
 }
 #descripcion {
-    /*text-align: justify;*/
-    hyphens: auto;
+    y-over
 }
 
 .footnote {
