@@ -4,9 +4,9 @@ BBOX = [-58.534235, -34.708906, -58.329524, -34.539576]
 CENTER = [-34.615753, -58.4]
 ZOOM = 12
 COLORS = {
-    "divisions": ["#0088e6", "#1492e9", "#2b9eeb", "#40a8ed", "#55b1f0",
-        "#6bbcf3", "#81c6f6", "#95d1f8", "#acdcfa", "#c1e6fd"
-    ]
+    // "divisions": ["#0088e6", "#1492e9", "#2b9eeb", "#40a8ed", "#55b1f0",
+        // "#6bbcf3", "#81c6f6", "#95d1f8", "#acdcfa", "#c1e6fd"]
+    "divisions": ["#006D2C", "#2CA25F", "#66C2A4", "#B2E2E2", "#EDF8FB"]
 }
 
 INDICS = {
